@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 const Home: React.FC = () => {
   return (
     <Layout>
-      <section className="relative h-screen flex items-center justify-center overflow-hidden bg-black">
+      <section className="relative min-h-screen flex items-center justify-center overflow-x-hidden bg-black py-24">
         {/* Abstract Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/20 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
@@ -49,7 +49,7 @@ const Home: React.FC = () => {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 text-left"
+            className="mt-12 md:mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 text-left"
           >
             <div className="p-6 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm hover:border-blue-500/50 transition-colors">
               <Server className="w-10 h-10 text-blue-500 mb-4" />
