@@ -31,7 +31,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, isOpen, onClose })
             className="relative w-full max-w-4xl max-h-[90vh] bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col"
           >
             {/* Header with Image */}
-            <div className="relative h-48 sm:h-64 flex-shrink-0">
+            <div className="relative h-48 sm:h-64 flex-shrink-0 bg-zinc-800">
               {project.image_url ? (
                 <img 
                   src={project.image_url} 
@@ -43,23 +43,22 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, isOpen, onClose })
                   <Code className="w-16 h-16 text-white/20" />
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent" />
               
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors"
+                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors z-10"
               >
                 <X className="w-6 h-6" />
               </button>
-              
-              <div className="absolute bottom-4 left-6 right-6">
-                <h2 className="text-3xl font-bold text-white mb-1">{project.title}</h2>
-                <p className="text-gray-300">{project.description}</p>
-              </div>
             </div>
 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-6 sm:p-8 custom-scrollbar">
+              <div className="mb-8 border-b border-white/10 pb-8">
+                <h2 className="text-3xl font-bold text-white mb-4">{project.title}</h2>
+                <p className="text-gray-300 text-lg leading-relaxed">{project.description}</p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 
                 {/* Left Column */}
