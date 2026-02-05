@@ -34,7 +34,9 @@ const AdminLogin: React.FC = () => {
 
       navigate('/admin/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Falha ao realizar login');
+      // Security: Do not leak specific error messages
+      console.error('Login error:', err);
+      setError('Email ou senha inválidos.');
     } finally {
       setLoading(false);
     }

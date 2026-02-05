@@ -3,13 +3,14 @@ import AdminLayout from '../../components/layout/AdminLayout';
 import { supabase } from '../../lib/supabase';
 import { useSiteContent } from '../../hooks/useSiteContent';
 import { Save, Loader2, Plus, Trash2 } from 'lucide-react';
+import ImageUploader from '../../components/ui/ImageUploader';
 
 const AboutAdmin: React.FC = () => {
   const { content, loading: contentLoading } = useSiteContent('sobre');
   const [loading, setLoading] = useState(false);
   
   // Local state for form fields
-  const [hero, setHero] = useState({ title: '', description: '' });
+  const [hero, setHero] = useState({ title: '', description: '', photo_url: '' });
   const [timeline, setTimeline] = useState<any[]>([]);
   const [qualities, setQualities] = useState<any[]>([]);
 
@@ -64,6 +65,40 @@ const AboutAdmin: React.FC = () => {
     setTimeline(newTimeline);
   };
 
+  const handleImageSelected = async (file: Blob) => {
+    try {
+      // Create a unique filename
+      const fileName = `about-hero-${Date.now()}.jpg`;
+      
+      // Upload to Supabase Storage (assuming 'portfolio' bucket exists)
+      const { data, error } = await supabase.storage
+        .from('portfolio')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: 'image/jpeg'
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      // Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('portfolio')
+        .getPublicUrl(fileName);
+
+      setHero(prev => ({ ...prev, photo_url: publicUrl }));
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Erro ao fazer upload da imagem. Verifique se o bucket "portfolio" existe no Supabase.');
+    }
+  };
+
+  const handleImageRemoved = () => {
+    setHero(prev => ({ ...prev, photo_url: '' }));
+  };
+
   if (contentLoading) return <div className="p-8"><Loader2 className="animate-spin" /></div>;
 
   return (
@@ -73,23 +108,32 @@ const AboutAdmin: React.FC = () => {
         {/* Hero Section */}
         <section className="bg-zinc-900 p-6 rounded-xl border border-white/10">
           <h3 className="text-xl font-bold mb-4">Cabeçalho</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Título</label>
-              <input 
-                type="text" 
-                value={hero.title} 
-                onChange={e => setHero({...hero, title: e.target.value})}
-                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-white"
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex-shrink-0">
+              <ImageUploader 
+                currentImage={hero.photo_url}
+                onImageSelected={handleImageSelected}
+                onImageRemoved={handleImageRemoved}
               />
             </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Descrição</label>
-              <textarea 
-                value={hero.description} 
-                onChange={e => setHero({...hero, description: e.target.value})}
-                className="w-full bg-black border border-white/10 rounded px-3 py-2 text-white h-24"
-              />
+            <div className="space-y-4 flex-grow">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Título</label>
+                <input 
+                  type="text" 
+                  value={hero.title} 
+                  onChange={e => setHero({...hero, title: e.target.value})}
+                  className="w-full bg-black border border-white/10 rounded px-3 py-2 text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Descrição</label>
+                <textarea 
+                  value={hero.description} 
+                  onChange={e => setHero({...hero, description: e.target.value})}
+                  className="w-full bg-black border border-white/10 rounded px-3 py-2 text-white h-24"
+                />
+              </div>
             </div>
           </div>
         </section>

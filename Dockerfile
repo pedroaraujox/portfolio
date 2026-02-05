@@ -1,21 +1,38 @@
-# Usar uma imagem base leve do Node.js (Mirror AWS para contornar bloqueios de rede do Docker Hub)
-FROM public.ecr.aws/docker/library/node:20-alpine
+# Use Node 20 alpine for smaller image size and security
+FROM node:20-alpine
 
-# Definir o diretório de trabalho dentro do container
+# Install dumb-init to handle PID 1 correctly
+RUN apk add --no-cache dumb-init
+
+# Create app directory
 WORKDIR /app
 
-# Copiar os arquivos de dependência primeiro para aproveitar o cache do Docker
-COPY package.json package-lock.json ./
+# Create a non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Instalar as dependências
+# Copy package files first (better caching)
+COPY package*.json ./
+
+# Install dependencies
 RUN npm ci
 
-# Copiar o restante do código do projeto
+# Copy the rest of the code
 COPY . .
 
-# Expor a porta padrão do Vite
+# Build the app (if needed for production serving, otherwise just for dev context)
+RUN npm run build
+
+# Change ownership to non-root user
+RUN chown -R appuser:appgroup /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
 EXPOSE 5173
 
-# Comando para iniciar o servidor de desenvolvimento
-# O --host é necessário para expor o servidor fora do container
+# Use dumb-init
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+
+# Default command
 CMD ["npm", "run", "dev", "--", "--host"]

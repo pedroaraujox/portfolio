@@ -1,7 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
+import dotenv from 'dotenv'
 
-const supabaseUrl = 'https://zcrkgsozqtiglfiforzp.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpjcmtnc296cXRpZ2xmaWZvcnpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwODM3NjYsImV4cCI6MjA4NTY1OTc2Nn0.NFX8l5crl1-fwdb_L6pCrVu9Czby1rKwiM4yXtVxzv0'
+dotenv.config()
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Erro: Variáveis de ambiente faltando.')
+  process.exit(1)
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey)
 
 async function testConnection() {

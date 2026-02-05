@@ -4,6 +4,7 @@ import TimelineItem from '../components/ui/Timeline';
 import { motion } from 'framer-motion';
 import { User, Target, Zap, BookOpen, Terminal, Briefcase, Code, Rocket, Cpu, Network } from 'lucide-react';
 import { useSiteContent } from '../hooks/useSiteContent';
+import ExpandableText from '../components/ui/ExpandableText';
 
 const About: React.FC = () => {
   const { content } = useSiteContent('sobre');
@@ -43,7 +44,11 @@ const About: React.FC = () => {
     { icon: 'Terminal', title: 'Organizado', desc: 'Gestão eficiente de tarefas e documentação detalhada.' },
   ];
 
-  const [hero, setHero] = useState({ title: 'Sobre Pedro Henrique', description: 'De entusiasta de hardware a Analista de Suporte e Desenvolvedor. Minha jornada é movida pela curiosidade e vontade de resolver problemas.' });
+  const [hero, setHero] = useState({ 
+    title: 'Sobre Pedro Henrique', 
+    description: 'De entusiasta de hardware a Analista de Suporte e Desenvolvedor. Minha jornada é movida pela curiosidade e vontade de resolver problemas.',
+    photo_url: ''
+  });
   const [timelineData, setTimelineData] = useState<any[]>(defaultTimeline);
   const [qualities, setQualities] = useState<any[]>(defaultQualities);
 
@@ -81,13 +86,19 @@ const About: React.FC = () => {
           >
             <div className="w-32 h-32 mx-auto mb-6 rounded-full border-2 border-blue-500 p-1">
               <div className="w-full h-full rounded-full bg-gray-800 flex items-center justify-center overflow-hidden">
-                <User className="w-16 h-16 text-gray-400" />
+                {hero.photo_url ? (
+                  <img src={hero.photo_url} alt={hero.title} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-16 h-16 text-gray-400" />
+                )}
               </div>
             </div>
             <h1 className="text-4xl font-bold mb-4">{hero.title}</h1>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              {hero.description}
-            </p>
+            <ExpandableText 
+              content={hero.description} 
+              className="text-xl text-gray-400 max-w-2xl mx-auto" 
+              limit={300}
+            />
           </motion.div>
 
           {/* Main Content Grid */}
