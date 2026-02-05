@@ -25,7 +25,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 4. Remover políticas antigas (Permissivas demais)
+-- 4. Remover políticas antigas (Permissivas demais) e Limpar Conflitos
 DROP POLICY IF EXISTS "Authenticated users can manage projects" ON public.projects;
 DROP POLICY IF EXISTS "Authenticated users can manage services" ON public.services;
 DROP POLICY IF EXISTS "Authenticated users can manage site_content" ON public.site_content;
@@ -37,6 +37,18 @@ DROP POLICY IF EXISTS "Admin full access to projects" ON public.projects;
 DROP POLICY IF EXISTS "Admin full access to services" ON public.services;
 DROP POLICY IF EXISTS "Admin full access to site content" ON public.site_content;
 DROP POLICY IF EXISTS "Admin full access to contact messages" ON public.contact_messages;
+
+-- Remover políticas NOVAS caso já existam (para evitar erro 42710 em re-execução)
+DROP POLICY IF EXISTS "Admins can manage projects" ON public.projects;
+DROP POLICY IF EXISTS "Admins can manage services" ON public.services;
+DROP POLICY IF EXISTS "Admins can manage site_content" ON public.site_content;
+DROP POLICY IF EXISTS "Admins can view messages" ON public.contact_messages;
+DROP POLICY IF EXISTS "Admins can update messages" ON public.contact_messages;
+DROP POLICY IF EXISTS "Admins can view audit logs" ON public.audit_logs;
+DROP POLICY IF EXISTS "System can insert audit logs" ON public.audit_logs;
+DROP POLICY IF EXISTS "Admins can view whitelist" ON public.admin_whitelist;
+DROP POLICY IF EXISTS "Admins can manage whitelist" ON public.admin_whitelist;
+DROP POLICY IF EXISTS "Admins can delete from whitelist" ON public.admin_whitelist;
 
 -- 5. Criar Novas Políticas Restritivas (Baseadas em is_admin())
 
@@ -79,10 +91,13 @@ CREATE POLICY "Admins can delete from whitelist" ON public.admin_whitelist
     FOR DELETE USING (public.is_admin());
 
 -- 7. Corrigir Storage Policies (Bucket 'portfolio')
--- Remover antigas
+-- Remover antigas e possíveis novas conflitantes
 DROP POLICY IF EXISTS "Admin can upload portfolio images" ON storage.objects;
 DROP POLICY IF EXISTS "Admin can update portfolio images" ON storage.objects;
 DROP POLICY IF EXISTS "Admin can delete portfolio images" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can upload portfolio images" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can update portfolio images" ON storage.objects;
+DROP POLICY IF EXISTS "Admins can delete portfolio images" ON storage.objects;
 
 -- Criar novas com is_admin()
 CREATE POLICY "Admins can upload portfolio images"
@@ -109,5 +124,5 @@ USING (
 -- 8. INSERIR ADMIN INICIAL (IMPORTANTE: Substitua pelo seu email se necessário)
 -- Tenta inserir o admin padrão definido no .env ou um placeholder
 INSERT INTO public.admin_whitelist (email)
-VALUES ('admin@admin.com.br') -- ALTERE PARA O SEU EMAIL REAL NO SQL EDITOR
+VALUES ('admin@portfolio.com') -- ALTERE PARA O SEU EMAIL REAL NO SQL EDITOR
 ON CONFLICT (email) DO NOTHING;
