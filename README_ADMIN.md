@@ -6,6 +6,23 @@ Este projeto inclui um painel administrativo completo para gerenciamento de cont
 O painel administrativo está acessível em:
 http://localhost:5173/admin-acesso-privado
 
+## Criar Usuário Administrador
+
+Para acessar o painel, você precisará de um usuário cadastrado. O projeto inclui um script para criar um usuário administrador inicial.
+
+1. Certifique-se de que você tem Node.js instalado (ou execute dentro do container Docker).
+2. Na raiz do projeto, execute:
+
+```bash
+node scripts/create_admin.js
+```
+
+Isso criará um usuário com as seguintes credenciais (definidas no script):
+- **Email:** `admin@portfolio.com`
+- **Senha:** `#web56st#`
+
+> **Nota:** Recomenda-se alterar a senha ou a lógica de criação de usuário para produção.
+
 ## Configuração do Banco de Dados (Supabase)
 
 Para que o painel funcione corretamente, é necessário configurar as tabelas no Supabase.

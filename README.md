@@ -1,57 +1,54 @@
-# React + TypeScript + Vite
+# Portfolio React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este é um projeto de portfólio desenvolvido com React, TypeScript, Vite e Tailwind CSS, integrado com Supabase para gerenciamento de conteúdo.
 
-Currently, two official plugins are available:
+## 🚀 Começando
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Para rodar o projeto, você tem duas opções principais:
 
-## Expanding the ESLint configuration
+1. **Docker (Recomendado):** Ambiente isolado e pronto para uso.
+2. **Localmente:** Requer Node.js instalado.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 🐳 Rodando com Docker
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+Para instruções detalhadas sobre como construir, rodar, rebuildar e parar os containers, consulte:
+👉 **[README_DOCKER.md](./README_DOCKER.md)**
+
+Resumo rápido:
+```bash
+docker-compose up
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 💻 Rodando Localmente
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. Instale as dependências:
+   ```bash
+   npm install
+   ```
+2. Rode o servidor de desenvolvimento:
+   ```bash
+   npm run dev
+   ```
 
-export default tseslint.config({
-  extends: [
-    // other configs...
-    // Enable lint rules for React
-    reactX.configs['recommended-typescript'],
-    // Enable lint rules for React DOM
-    reactDom.configs.recommended,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## 🔐 Painel Administrativo
+
+O projeto conta com um CMS completo para gerenciar projetos, serviços e textos.
+
+Para saber como configurar o banco de dados, criar usuários administradores e acessar o painel, consulte:
+👉 **[README_ADMIN.md](./README_ADMIN.md)**
+
+## 🛠️ Tecnologias
+
+- [React](https://reactjs.org/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Vite](https://vitejs.dev/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Supabase](https://supabase.com/)
+- [Docker](https://www.docker.com/)
+
+## 📂 Estrutura do Projeto
+
+- `src/`: Código fonte da aplicação
+- `supabase/`: Migrações e scripts SQL
+- `scripts/`: Scripts utilitários (ex: criar admin)
+- `docker-compose.yml`: Configuração do Docker

@@ -1,5 +1,5 @@
-# Usar uma imagem base leve do Node.js
-FROM node:20-alpine
+# Usar uma imagem base leve do Node.js (Mirror AWS para contornar bloqueios de rede do Docker Hub)
+FROM public.ecr.aws/docker/library/node:20-alpine
 
 # Definir o diretório de trabalho dentro do container
 WORKDIR /app

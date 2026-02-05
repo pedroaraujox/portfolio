@@ -22,11 +22,25 @@ Este projeto foi configurado para rodar localmente usando Docker e Docker Compos
    docker-compose up -d
    ```
 
-2. **Acessar a aplicação:**
+2. **Reconstruir (Rebuild) a imagem:**
+
+   Se você instalou novas dependências ou alterou o Dockerfile, é necessário reconstruir a imagem:
+
+   ```bash
+   docker-compose up --build
+   ```
+
+   Ou para reconstruir sem iniciar:
+
+   ```bash
+   docker-compose build
+   ```
+
+3. **Acessar a aplicação:**
 
    Abra seu navegador em: [http://localhost:5173](http://localhost:5173)
 
-3. **Parar a execução:**
+4. **Parar a execução:**
 
    Pressione `Ctrl+C` no terminal (se não estiver em modo detached) ou execute:
 
