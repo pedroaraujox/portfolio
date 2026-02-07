@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layout/AdminLayout';
 import { supabase } from '../../lib/supabase';
-import { Project } from '../../types';
+import { Project, ProjectImage } from '../../types';
 import { Plus, Edit, Trash2, X, Save, Loader2 } from 'lucide-react';
+import ImageUploader from '../../components/ui/ImageUploader';
 
 const ProjectsAdmin: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -26,7 +27,11 @@ const ProjectsAdmin: React.FC = () => {
   }, []);
 
   const handleEdit = (project: Project) => {
-    setCurrentProject(project);
+    // Ensure gallery is initialized
+    setCurrentProject({
+        ...project,
+        gallery: project.gallery || (project.image_url ? [{ url: project.image_url }] : [])
+    });
     setIsEditing(true);
   };
 
@@ -35,6 +40,7 @@ const ProjectsAdmin: React.FC = () => {
       title: '',
       description: '',
       image_url: '',
+      gallery: [],
       problem: '',
       solution: '',
       technologies: '',
@@ -58,15 +64,22 @@ const ProjectsAdmin: React.FC = () => {
     setSaveLoading(true);
 
     try {
-      if (currentProject.id) {
+      const projectToSave = { ...currentProject };
+      
+      // Sync image_url with first gallery image if empty or force sync
+      if (projectToSave.gallery && projectToSave.gallery.length > 0) {
+        projectToSave.image_url = projectToSave.gallery[0].url;
+      }
+
+      if (projectToSave.id) {
         await supabase
           .from('projects')
-          .update(currentProject)
-          .eq('id', currentProject.id);
+          .update(projectToSave)
+          .eq('id', projectToSave.id);
       } else {
         await supabase
           .from('projects')
-          .insert([currentProject]);
+          .insert([projectToSave]);
       }
       setIsEditing(false);
       fetchProjects();
@@ -149,13 +162,12 @@ const ProjectsAdmin: React.FC = () => {
                   required
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Imagem URL</label>
-                <input
-                  type="text"
-                  value={currentProject.image_url || ''}
-                  onChange={(e) => setCurrentProject({ ...currentProject, image_url: e.target.value })}
-                  className="w-full px-3 py-2 bg-black border border-white/10 rounded-lg text-white"
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-400 mb-1">Galeria de Imagens (A primeira imagem será a capa)</label>
+                <ImageUploader
+                  images={currentProject.gallery || []}
+                  onImagesChange={(newImages) => setCurrentProject({ ...currentProject, gallery: newImages })}
+                  maxImages={10}
                 />
               </div>
             </div>

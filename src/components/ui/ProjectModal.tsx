@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Code, Lightbulb, CheckCircle, BookOpen, AlertCircle } from 'lucide-react';
 import { Project } from '../../types';
+import ImageCarousel from './ImageCarousel';
 
 interface ProjectModalProps {
   project: Project | null;
@@ -11,6 +12,13 @@ interface ProjectModalProps {
 
 const ProjectModal: React.FC<ProjectModalProps> = ({ project, isOpen, onClose }) => {
   if (!project) return null;
+
+  // Prepare images for carousel
+  const carouselImages = project.gallery && project.gallery.length > 0
+    ? project.gallery
+    : project.image_url
+      ? [{ url: project.image_url, caption: project.title }]
+      : [];
 
   return (
     <AnimatePresence>
@@ -30,14 +38,10 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, isOpen, onClose })
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="relative w-full max-w-4xl max-h-[90vh] bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col"
           >
-            {/* Header with Image */}
-            <div className="relative h-48 sm:h-64 flex-shrink-0 bg-zinc-800">
-              {project.image_url ? (
-                <img 
-                  src={project.image_url} 
-                  alt={project.title} 
-                  className="w-full h-full object-cover"
-                />
+            {/* Header with Image/Carousel */}
+            <div className="relative h-64 sm:h-96 flex-shrink-0 bg-zinc-800">
+              {carouselImages.length > 0 ? (
+                <ImageCarousel images={carouselImages} />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-blue-900 to-black flex items-center justify-center">
                   <Code className="w-16 h-16 text-white/20" />
@@ -46,7 +50,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, isOpen, onClose })
               
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors z-10"
+                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/70 rounded-full text-white transition-colors z-20"
               >
                 <X className="w-6 h-6" />
               </button>

@@ -1,187 +1,218 @@
-import React, { useState, useCallback, useRef } from 'react';
-import Cropper from 'react-easy-crop';
-import { Upload, X, Check, Image as ImageIcon, ZoomIn, ZoomOut } from 'lucide-react';
-import { getCroppedImg } from '../../lib/utils';
+import React, { useState, useRef, useCallback } from 'react';
+import { Upload, X, Image as ImageIcon, Loader2, AlertCircle } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { compressImage } from '../../lib/imageUtils';
+import { ProjectImage } from '../../types';
 
 interface ImageUploaderProps {
-  currentImage?: string | null;
-  onImageSelected: (file: Blob) => void;
-  onImageRemoved: () => void;
-  className?: string;
+  images: ProjectImage[];
+  onImagesChange: (images: ProjectImage[]) => void;
+  maxImages?: number;
+  maxSizeMB?: number; // default 5
 }
 
-const ImageUploader: React.FC<ImageUploaderProps> = ({ 
-  currentImage, 
-  onImageSelected, 
-  onImageRemoved,
-  className = '' 
+export const ImageUploader: React.FC<ImageUploaderProps> = ({
+  images = [],
+  onImagesChange,
+  maxImages = 10,
+  maxSizeMB = 5,
 }) => {
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
-  const [isCropping, setIsCropping] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const onCropComplete = useCallback((_croppedArea: any, croppedAreaPixels: any) => {
-    setCroppedAreaPixels(croppedAreaPixels);
-  }, []);
-
-  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        alert('A imagem deve ter no máximo 5MB.');
-        return;
-      }
-      if (!file.type.startsWith('image/')) {
-        alert('Por favor, selecione apenas arquivos de imagem.');
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.addEventListener('load', () => {
-        setImageSrc(reader.result as string);
-        setIsCropping(true);
-      });
-      reader.readAsDataURL(file);
+  const validateFile = (file: File): string | null => {
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      return `Tipo de arquivo inválido: ${file.name}. Use JPEG, PNG, GIF ou WebP.`;
     }
+    if (file.size > maxSizeMB * 1024 * 1024) {
+      return `Arquivo muito grande: ${file.name}. Máximo de ${maxSizeMB}MB.`;
+    }
+    return null;
   };
 
-  const handleCropSave = async () => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    if (images.length + files.length > maxImages) {
+      setError(`Limite de ${maxImages} imagens excedido.`);
+      return;
+    }
+
+    setError(null);
+    setUploading(true);
+    setProgress(0);
+
+    const newImages: ProjectImage[] = [];
+    const totalFiles = files.length;
+    let completedFiles = 0;
+
     try {
-      if (!imageSrc || !croppedAreaPixels) return;
-      const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
-      if (croppedImage) {
-        onImageSelected(croppedImage);
-        setIsCropping(false);
-        setImageSrc(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
+      for (const file of files) {
+        // Validation
+        const validationError = validateFile(file);
+        if (validationError) {
+          setError(validationError);
+          continue; // Skip invalid files but try others
+        }
+
+        // Compression
+        let fileToUpload = file;
+        try {
+          fileToUpload = await compressImage(file);
+        } catch (err) {
+          console.warn('Compression failed, using original file', err);
+        }
+
+        // Upload to Supabase
+        const fileExt = fileToUpload.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError, data } = await supabase.storage
+          .from('portfolio')
+          .upload(filePath, fileToUpload);
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        // Get Public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('portfolio')
+          .getPublicUrl(filePath);
+
+        newImages.push({
+          url: publicUrl,
+          caption: '', // Default empty caption
+        });
+
+        completedFiles++;
+        setProgress((completedFiles / totalFiles) * 100);
       }
-    } catch (e) {
-      console.error(e);
-      alert('Erro ao cortar imagem.');
+
+      // Update parent state
+      onImagesChange([...images, ...newImages]);
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      setError(err.message || 'Erro ao fazer upload das imagens.');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
-  const handleRemove = () => {
-    if (window.confirm('Tem certeza que deseja remover a foto?')) {
-      onImageRemoved();
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+  const removeImage = (indexToRemove: number) => {
+    const newImages = images.filter((_, index) => index !== indexToRemove);
+    onImagesChange(newImages);
+  };
+
+  const updateCaption = (index: number, caption: string) => {
+    const newImages = [...images];
+    newImages[index] = { ...newImages[index], caption };
+    onImagesChange(newImages);
   };
 
   return (
-    <div className={`relative ${className}`}>
-      {/* Hidden File Input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={onFileChange}
-        accept="image/png, image/jpeg, image/jpg"
-        className="hidden"
-      />
-
-      {/* Current Image Display */}
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-32 h-32 rounded-full border-2 border-blue-500 p-1 relative group">
-          <div className="w-full h-full rounded-full bg-gray-800 flex items-center justify-center overflow-hidden">
-            {currentImage ? (
-              <img src={currentImage} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <ImageIcon className="w-12 h-12 text-gray-500" />
-            )}
-          </div>
-          
-          {/* Overlay Actions */}
-          <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              className="p-2 bg-blue-600 rounded-full text-white hover:bg-blue-700 mx-1"
-              title="Alterar foto"
-            >
-              <Upload size={16} />
-            </button>
-            {currentImage && (
-              <button 
-                onClick={handleRemove}
-                className="p-2 bg-red-600 rounded-full text-white hover:bg-red-700 mx-1"
-                title="Remover foto"
-              >
-                <X size={16} />
-              </button>
-            )}
-          </div>
-        </div>
+    <div className="space-y-4">
+      {/* Upload Area */}
+      <div 
+        className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${
+          uploading ? 'bg-zinc-900 border-zinc-700 opacity-50 cursor-not-allowed' : 'border-zinc-700 hover:border-blue-500 hover:bg-zinc-900/50'
+        }`}
+        onClick={() => !uploading && fileInputRef.current?.click()}
+      >
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          multiple
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          onChange={handleFileSelect}
+          disabled={uploading}
+        />
         
-        <button 
-          onClick={() => fileInputRef.current?.click()}
-          className="text-sm text-blue-400 hover:text-blue-300 font-medium"
-        >
-          {currentImage ? 'Alterar Foto' : 'Adicionar Foto'}
-        </button>
-        <p className="text-xs text-gray-500">JPG ou PNG. Máx 5MB.</p>
+        <div className="flex flex-col items-center gap-3">
+          {uploading ? (
+            <>
+              <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-white">Enviando imagens...</p>
+                <div className="w-48 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="p-4 bg-zinc-800 rounded-full">
+                <Upload className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">Clique para fazer upload</p>
+                <p className="text-xs text-zinc-400 mt-1">
+                  JPG, PNG, GIF, WebP (Max 5MB)
+                </p>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Cropper Modal */}
-      {isCropping && imageSrc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4">
-          <div className="bg-zinc-900 rounded-xl w-full max-w-lg overflow-hidden border border-white/10 shadow-2xl">
-            <div className="p-4 border-b border-white/10 flex justify-between items-center">
-              <h3 className="text-lg font-bold text-white">Ajustar Imagem</h3>
-              <button onClick={() => setIsCropping(false)} className="text-gray-400 hover:text-white">
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="relative h-80 bg-black">
-              <Cropper
-                image={imageSrc}
-                crop={crop}
-                zoom={zoom}
-                aspect={1}
-                onCropChange={setCrop}
-                onCropComplete={onCropComplete}
-                onZoomChange={setZoom}
-                cropShape="round"
-                showGrid={false}
-              />
-            </div>
-
-            <div className="p-4 space-y-4">
-              <div className="flex items-center gap-2">
-                <ZoomOut size={16} className="text-gray-400" />
-                <input
-                  type="range"
-                  value={zoom}
-                  min={1}
-                  max={3}
-                  step={0.1}
-                  aria-labelledby="Zoom"
-                  onChange={(e) => setZoom(Number(e.target.value))}
-                  className="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                />
-                <ZoomIn size={16} className="text-gray-400" />
-              </div>
-              
-              <div className="flex justify-end gap-2">
-                <button 
-                  onClick={() => setIsCropping(false)}
-                  className="px-4 py-2 rounded bg-gray-700 text-white hover:bg-gray-600"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  onClick={handleCropSave}
-                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
-                >
-                  <Check size={16} /> Aplicar
-                </button>
-              </div>
-            </div>
-          </div>
+      {/* Error Message */}
+      {error && (
+        <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+          <AlertCircle className="w-4 h-4" />
+          {error}
         </div>
       )}
+
+      {/* Image Preview List */}
+      {images.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {images.map((img, index) => (
+            <div key={index} className="group relative bg-zinc-900 rounded-lg border border-white/10 overflow-hidden">
+              <div className="aspect-video relative bg-zinc-800">
+                <img 
+                  src={img.url} 
+                  alt={`Preview ${index + 1}`} 
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeImage(index);
+                  }}
+                  className="absolute top-2 right-2 p-1.5 bg-red-500/80 hover:bg-red-500 text-white rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-2">
+                <input
+                  type="text"
+                  placeholder="Adicionar legenda..."
+                  value={img.caption || ''}
+                  onChange={(e) => updateCaption(index, e.target.value)}
+                  className="w-full bg-transparent text-xs text-white placeholder-zinc-500 border-none focus:ring-0 p-0"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      <div className="text-xs text-zinc-500 text-right">
+        {images.length} / {maxImages} imagens
+      </div>
     </div>
   );
 };
