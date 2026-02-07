@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ImageUploader from '../ImageUploader';
 import { supabase } from '../../../lib/supabase';
 
@@ -36,7 +36,7 @@ describe('ImageUploader', () => {
     render(<ImageUploader images={[]} onImagesChange={mockOnChange} />);
     
     const file = new File(['hello'], 'hello.png', { type: 'image/png' });
-    const input = screen.getByLabelText(/Clique para fazer upload/i, { selector: 'input' }); // Adjust selector if needed
+    
     // Since input is hidden, we select by simple input selector in test
     const fileInput = document.querySelector('input[type="file"]');
     

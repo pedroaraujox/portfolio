@@ -65,38 +65,12 @@ const AboutAdmin: React.FC = () => {
     setTimeline(newTimeline);
   };
 
-  const handleImageSelected = async (file: Blob) => {
-    try {
-      // Create a unique filename
-      const fileName = `about-hero-${Date.now()}.jpg`;
-      
-      // Upload to Supabase Storage (assuming 'portfolio' bucket exists)
-      const { data, error } = await supabase.storage
-        .from('portfolio')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType: 'image/jpeg'
-        });
-
-      if (error) {
-        throw error;
-      }
-
-      // Get Public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('portfolio')
-        .getPublicUrl(fileName);
-
-      setHero(prev => ({ ...prev, photo_url: publicUrl }));
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      alert('Erro ao fazer upload da imagem. Verifique se o bucket "portfolio" existe no Supabase.');
+  const handleImageChange = (images: { url: string; caption?: string }[]) => {
+    if (images.length > 0) {
+      setHero(prev => ({ ...prev, photo_url: images[0].url }));
+    } else {
+      setHero(prev => ({ ...prev, photo_url: '' }));
     }
-  };
-
-  const handleImageRemoved = () => {
-    setHero(prev => ({ ...prev, photo_url: '' }));
   };
 
   if (contentLoading) return <div className="p-8"><Loader2 className="animate-spin" /></div>;
@@ -111,9 +85,9 @@ const AboutAdmin: React.FC = () => {
           <div className="flex flex-col md:flex-row gap-6">
             <div className="flex-shrink-0">
               <ImageUploader 
-                currentImage={hero.photo_url}
-                onImageSelected={handleImageSelected}
-                onImageRemoved={handleImageRemoved}
+                images={hero.photo_url ? [{ url: hero.photo_url, caption: 'Foto de Perfil' }] : []}
+                onImagesChange={handleImageChange}
+                maxImages={1}
               />
             </div>
             <div className="space-y-4 flex-grow">
